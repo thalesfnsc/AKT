@@ -174,6 +174,13 @@ if __name__ == '__main__':
     params = parser.parse_args()
     dataset = params.dataset
 
+    if dataset in {'errex'}:
+        params.n_question = 238
+        params.batch_size = 24
+        params.seqlen = 200
+        params.data_dir = 'content/AKT/data/'+ dataset
+        params.data_name = dataset
+
     if dataset in {"assist2009_pid"}:
         params.n_question = 110
         params.batch_size = 24
