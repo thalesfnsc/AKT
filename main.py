@@ -180,9 +180,17 @@ if __name__ == '__main__':
         params.seqlen = 200
         params.data_dir = '/content/AKT/data/'+ dataset
         params.data_name = dataset
+
+    if dataset in {'errex_pid'}:
+        params.n_question = 4
+        params.batch_size = 24
+        params.seqlen = 200
+        params.data_dir = '/content/AKT/data/'+ dataset
+        params.data_name = dataset
         params.n_pid = 238
 
         
+
     if dataset in {"assist2009_pid"}:
         params.n_question = 110
         params.batch_size = 24
