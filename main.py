@@ -186,7 +186,7 @@ if __name__ == '__main__':
         params.batch_size = 24
         params.seqlen = 200
         params.data_dir = '/content/AKT/data/'+ dataset
-        params.data_name = dataset
+        params.data_name = dataset 
         params.n_pid = 238
 
         
