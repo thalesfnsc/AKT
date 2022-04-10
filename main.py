@@ -175,12 +175,14 @@ if __name__ == '__main__':
     dataset = params.dataset
 
     if dataset in {'errex'}:
-        params.n_question = 238
+        params.n_question = 4
         params.batch_size = 24
         params.seqlen = 200
-        params.data_dir = 'content/AKT/data/'+ dataset
+        params.data_dir = '/content/AKT/data/'+ dataset
         params.data_name = dataset
+        params.n_pid = 238
 
+        
     if dataset in {"assist2009_pid"}:
         params.n_question = 110
         params.batch_size = 24
@@ -237,10 +239,18 @@ if __name__ == '__main__':
     for item_ in file_name_identifier:
         file_name = file_name+item_[0] + str(item_[1])
 
-    train_data_path = params.data_dir + "/" + \
-        params.data_name + "_train"+str(params.train_set)+".csv"
-    valid_data_path = params.data_dir + "/" + \
-        params.data_name + "_valid"+str(params.train_set)+".csv"
+    if dataset in {'errex'}:
+
+        train_data_path = params.data_dir + "/" + \
+            params.data_name + "_train"+str(params.train_set)+".csv"
+        valid_data_path = train_data_path
+
+    else:
+        train_data_path = params.data_dir + "/" + \
+            params.data_name + "_train"+str(params.train_set)+".csv"
+        valid_data_path = params.data_dir + "/" + \
+            params.data_name + "_valid"+str(params.train_set)+".csv"
+ 
 
     train_q_data, train_qa_data, train_pid = dat.load_data(train_data_path)
     valid_q_data, valid_qa_data, valid_pid = dat.load_data(valid_data_path)

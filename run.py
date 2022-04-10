@@ -145,8 +145,7 @@ def test(net, params, optimizer, q_data, qa_data, pid_data, label):
             pid_one_seq = pid_data[:, idx *
                                    params.batch_size:(idx+1) * params.batch_size]
         input_q = q_one_seq[:, :]  # Shape (seqlen, batch_size)
-        qa_one_seq = qa_data[:, idx *
-                             params.batch_size:(idx+1) * params.batch_size]
+        qa_one_seq = qa_data[:, idx*params.batch_size:(idx+1) * params.batch_size]
         input_qa = qa_one_seq[:, :]  # Shape (seqlen, batch_size)
 
         # print 'seq_num', seq_num
@@ -179,6 +178,7 @@ def test(net, params, optimizer, q_data, qa_data, pid_data, label):
                 loss, pred, ct = net(input_q, input_qa, target, input_pid)
             else:
                 loss, pred, ct = net(input_q, input_qa, target)
+      
         pred = pred.cpu().numpy()  # (seqlen * batch_size, 1)
         true_el += ct.cpu().numpy()
         #target = target.cpu().numpy()
