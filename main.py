@@ -247,7 +247,7 @@ if __name__ == '__main__':
     for item_ in file_name_identifier:
         file_name = file_name+item_[0] + str(item_[1])
 
-    if dataset in {'errex'}:
+    if dataset in {'errex_pid'}:
 
         train_data_path = params.data_dir + "/" + \
             params.data_name + "_train"+str(params.train_set)+".csv"

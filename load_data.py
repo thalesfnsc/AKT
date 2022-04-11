@@ -99,11 +99,13 @@ class PID_DATA(object):
         q_data = []
         qa_data = []
         p_data = []
+        index = []
         for lineID, line in enumerate(f_data):
             line = line.strip()
             # lineID starts from 0
             if lineID % 4 == 0:
                 student_id = lineID//4
+                index.append(student_id)
             if lineID % 4 == 2:
                 Q = line.split(self.separate_char)
                 if len(Q[len(Q)-1]) == 0:
@@ -148,6 +150,8 @@ class PID_DATA(object):
                     qa_data.append(answer_sequence)
                     p_data.append(problem_sequence)
 
+        print('teste:',len(index))
+        print(len(q_data))
         f_data.close()
         ### data: [[],[],[],...] <-- set_max_seqlen is used
         # convert data into ndarrays for better speed during training

@@ -1,3 +1,4 @@
+from load_data import PID_DATA
 from load_data import DATA
 from run import test
 import torch
@@ -30,18 +31,28 @@ with open('/home/thales/KT-Models/AKT/data/errex/errex_dropped.csv','rb') as fil
     df = pd.read_csv(file)
 
 ######
-n_question = 238
+n_question = 4
 batch_size = 24
 seqlen = 200
 
-dat = DATA(n_question=238,seqlen=200,separate_char=',')
-train_q_data, train_qa_data, train_pid = dat.load_data('/home/thales/KT-Models/AKT/data/errex/errex_train1.csv')
+batch_size = 1
+n_question = 4
 
-######
-def knowledge_estimate(df,student_interations,problems_per_skills):
+dat = PID_DATA(n_question=4,seqlen=315,separate_char=',')
+train_q_data, train_qa_data, train_pid = dat.load_data('/home/thales/KT-Models/AKT/data/errex_pid/errex_pid_train1.csv')
 
-    students = df['student_id'].unique()
-    student_mean_of_correctness = {}
+
+with open('/home/thales/KT-Models/AKT/data/errex/errex_replace_data.csv','rb') as file:
+    df_2 = pd.read_csv(file)
+
+
+len_seq = []
+for student in df_2['student_id'].unique():
+    len_seq.append(len(df_2[df_2['student_id']==student]['problem_id'].values))
+
+print(max(len_seq))
+
+
 
 ######
 
@@ -50,8 +61,8 @@ students = df['student_id'].unique()
 
 #Reproducing test for predictions
 
-checkpoint = torch.load('/home/thales/KT-Models/AKT/checkpoints/_b24_nb1_gn-1_lr1e-05_s224_sl200_do0.05_dm256_ts1_kq1_l21e-05_150.pt',map_location=torch.device('cpu'))
-model = AKT(n_question=n_question,n_pid=-1,n_blocks=1,d_model=256,dropout=0.05,kq_same=1,model_type='akt',l2=1e-5)
+checkpoint = torch.load('/home/thales/KT-Models/AKT/checkpoints/errex_pid.pt',map_location=torch.device('cpu'))
+model = AKT(n_question=n_question,n_pid=238,n_blocks=1,d_model=256,dropout=0.05,kq_same=1,model_type='akt',l2=1e-5)
 model.load_state_dict(checkpoint['model_state_dict'])   
 model.eval()
 
@@ -62,89 +73,89 @@ pid_flag = False
 model_type = 'akt'
 
 N = int(math.ceil(float(len(train_q_data))/float(1)))
+print(N)
+pid_flag = True
 
-train_q_data = train_q_data.T #(200,598)
-train_qa_data = train_qa_data.T #(200,598)
+#ENTENDER O PORQUE QUE COM 601 ALUNOS E NÃO 598
+
+pid_data = train_pid.T
+q_data = train_q_data.T #(200,598)
+qa_data = train_qa_data.T #(200,598)
 
 seq_num = train_q_data.shape[1]
 pred_list = []
 target_list = []
 
+'''
 count = 0
 true_el = 0
 element_count = 0
 for idx in range(N):
 
-    q_one_seq = train_q_data[:, idx*1:(idx+1)*1]
-    if pid_flag:
-        pid_one_seq = train_pid[:, idx *
-                                1:(idx+1) * 1]
-    input_q = q_one_seq[:, :]  # Shape (seqlen, batch_size)
-    qa_one_seq = train_qa_data[:, idx*1:(idx+1) * 1]
-    input_qa = qa_one_seq[:, :]  # Shape (seqlen, batch_size)
-    
-
-    # print 'seq_num', seq_num
-    if model_type in transpose_data_model:
-        # Shape (seqlen, batch_size)
-        input_q = np.transpose(q_one_seq[:, :])
-        # Shape (seqlen, batch_size)
-        input_qa = np.transpose(qa_one_seq[:, :])
-        target = np.transpose(qa_one_seq[:, :])
+        q_one_seq = q_data[:, idx*batch_size:(idx+1)*batch_size]
         if pid_flag:
-            input_pid = np.transpose(pid_one_seq[:, :])
-    else:
-        input_q = (q_one_seq[:, :])  # Shape (seqlen, batch_size)
-        input_qa = (qa_one_seq[:, :])  # Shape (seqlen, batch_size)
-        target = (qa_one_seq[:, :])
+            pid_one_seq = pid_data[:, idx *
+                                   batch_size:(idx+1) * batch_size]
+        input_q = q_one_seq[:, :]  # Shape (seqlen, batch_size)
+        qa_one_seq = qa_data[:, idx *
+                             batch_size:(idx+1) * batch_size]
+        input_qa = qa_one_seq[:, :]  # Shape (seqlen, batch_size)
+
+        # print 'seq_num', seq_num
+        if model_type in transpose_data_model:
+            # Shape (seqlen, batch_size)
+            input_q = np.transpose(q_one_seq[:, :])
+            # Shape (seqlen, batch_size)
+            input_qa = np.transpose(qa_one_seq[:, :])
+            target = np.transpose(qa_one_seq[:, :])
+            if pid_flag:
+                input_pid = np.transpose(pid_one_seq[:, :])
+        else:
+            input_q = (q_one_seq[:, :])  # Shape (seqlen, batch_size)
+            input_qa = (qa_one_seq[:, :])  # Shape (seqlen, batch_size)
+            target = (qa_one_seq[:, :])
+            if pid_flag:
+                input_pid = (pid_one_seq[:, :])
+        target = (target - 1) /n_question
+        target_1 = np.floor(target)
+        #target = np.random.randint(0,2, size = (target.shape[0],target.shape[1]))
+
+        input_q = torch.from_numpy(input_q).long().to(device)
+        input_qa = torch.from_numpy(input_qa).long().to(device)
+        target = torch.from_numpy(target_1).float().to(device)
         if pid_flag:
-            input_pid = (pid_one_seq[:, :])
-    target = (target - 1) / 238
-    target_1 = np.floor(target)
+            input_pid = torch.from_numpy(input_pid).long().to(device)
 
-    input_q = torch.from_numpy(input_q).long().to(device)
-    input_qa = torch.from_numpy(input_qa).long().to(device)
-    target = torch.from_numpy(target_1).float().to(device)
+        with torch.no_grad():
+            if pid_flag:
+                loss, pred, ct = net(input_q, input_qa, target, input_pid)
+            else:
+                loss, pred, ct = net(input_q, input_qa, target)
+        pred = pred.cpu().numpy()  # (seqlen * batch_size, 1)
+        true_el += ct.cpu().numpy()
+        #target = target.cpu().numpy()
+        if (idx + 1) * batch_size > seq_num:
+            real_batch_size = seq_num - idx * batch_size
+            count += real_batch_size
+        else:
+            count += batch_size
 
+        # correct: 1.0; wrong 0.0; padding -1.0
+        target = target_1.reshape((-1,))
+        nopadding_index = np.flatnonzero(target >= -0.9)
+        nopadding_index = nopadding_index.tolist()
+        pred_nopadding = pred[nopadding_index]
+        target_nopadding = target[nopadding_index]
+    #print(student_mean_of_correctness)
 
-    with torch.no_grad():
-        loss,pred,ct = model(input_q,input_qa,target)
-
-    pred = pred.cpu().numpy()  # (seqlen * batch_size, 1)
-    true_el += ct.cpu().numpy()
-    #target = target.cpu().numpy()
-    if (idx + 1) * 1 > seq_num:
-        real_batch_size = seq_num - idx * 1
-        count += real_batch_size
-    else:
-        count += 1
-
-    # correct: 1.0; wrong 0.0; padding -1.0
-    target = target_1.reshape((-1,))
-    nopadding_index = np.flatnonzero(target >= -0.9)
-    nopadding_index = nopadding_index.tolist()
-    pred_nopadding = pred[nopadding_index]
-    target_nopadding = target[nopadding_index]
-    element_count += pred_nopadding.shape[0]
-
-
-    skill_index = students_index_skills[students_list[idx]]
-
-    mean_of_correctness = {}
-    for skill in skill_index.keys():
-        mean_of_correctness[skill] = np.mean([pred_nopadding[i] for i in skill_index[skill] ])
-
-    student_mean_of_correctness[students_list[idx]] = mean_of_correctness
-
-
-
+'''
 
 #print(student_mean_of_correctness)
     #now use the students skill index and calculated the knowledge estimate for each iteration
 
 
 
-
+'''
 with open('/home/thales/KT-Models/Errex data/ErrEx posttest data.xlsx','rb') as file:
     df_2 = pd.read_excel(file)
 
@@ -180,11 +191,7 @@ pearson_correlations['DecimalAddition'] = pearsonr(decimal_addition,decimal_addi
 
 print(pearson_correlations)
 
-
-#try to adapt the test method , modifying only the part that concatenate the prediction
-#try to generate prediction for an individual student, passing only one student per time
-#and use the student_index_skills to acess the prediction in the student sequence 
-#for each skill separated
+'''
 
 '''
 question = student_interations[students[0]][0]
