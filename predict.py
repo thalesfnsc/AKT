@@ -16,31 +16,31 @@ device = torch.device("cpu")
 
 ######
 
-with open('/home/thales/KT-Models/AKT/pickle/students_index_skills.pickle','rb') as file:
+with open('/content/AKT/pickle/students_index_skills.pickle','rb') as file:
    students_index_skills =  pickle.load(file)['student_index']
 
 
-with open('/home/thales/KT-Models/AKT/pickle/problems_per_skills.pickle','rb') as file:
+with open('/content/AKT/pickle/problems_per_skills.pickle','rb') as file:
     problems_per_skills = pickle.load(file)
     
 
-with open('/home/thales/KT-Models/AKT/pickle/student_interations.pickle','rb') as file:
+with open('/content/AKT/pickle/student_interations.pickle','rb') as file:
     student_interations = pickle.load(file)
 
-with open('/home/thales/KT-Models/AKT/data/errex/errex_dropped.csv','rb') as file:
+with open('/content/AKT/data/errex/errex_dropped.csv','rb') as file:
     df = pd.read_csv(file)
 
 ######
-seqlen = 350
+seqlen = 320
 
-batch_size = 598
+batch_size = 300
 n_question = 4
 
 dat = PID_DATA(n_question=4,seqlen=seqlen,separate_char=',')
-train_q_data, train_qa_data, train_pid = dat.load_data('/home/thales/KT-Models/AKT/data/errex_pid/errex_pid_train1.csv')
+train_q_data, train_qa_data, train_pid = dat.load_data('/content/AKT/data/errex_pid/errex_pid_train1.csv')
 
 
-with open('/home/thales/KT-Models/AKT/data/errex/errex_dropped.csv','rb') as file:
+with open('/content/AKT/data/errex/errex_dropped.csv','rb') as file:
     df_2 = pd.read_csv(file)
 
 
@@ -52,7 +52,7 @@ students = df_2['student_id'].unique()
 
 #Reproducing test for predictions
 
-checkpoint = torch.load('/home/thales/KT-Models/AKT/checkpoints/errex_pid_new.pt',map_location=torch.device('cpu'))
+checkpoint = torch.load('/content/AKT/checkpoints/errex_pid_new.pt',map_location=torch.device('cpu'))
 model = AKT(n_question=n_question,n_pid=238,n_blocks=1,d_model=256,dropout=0.05,kq_same=1,model_type='akt',l2=1e-5)
 model.load_state_dict(checkpoint['model_state_dict'])   
 model.eval()
@@ -63,7 +63,8 @@ student_mean_of_correctness = {}
 pid_flag = False
 model_type = 'akt'
 
-N = int(math.ceil(float(len(train_q_data))/float(1)))
+N = int(math.ceil(float(len(train_q_data))/float(100)))
+print(N)
 
 pid_flag = True
 pid_data = train_pid.T
@@ -80,7 +81,6 @@ true_el = 0
 element_count = 0
 preds = []
 
-start = time.time()
 
 for idx in range(N):
 
@@ -120,11 +120,12 @@ for idx in range(N):
             input_pid = torch.from_numpy(input_pid).long().to(device)
     
         print(input_q.shape)
-        print(input_q[0])
-        print(input_pid[0])
-        print(input_qa[0])
+        print(input_pid.shape)
+        #print(input_qa[0])
 
-        
+      
+
+        start = time.time()
         with torch.no_grad():
             if pid_flag:
                 loss, pred, ct = model(input_q, input_qa, target, input_pid)
@@ -132,8 +133,12 @@ for idx in range(N):
                 loss, pred, ct = model(input_q, input_qa, target)
         pred = pred.cpu().numpy()  # (seqlen * batch_size, 1)
         true_el += ct.cpu().numpy()
+        
+
         print(pred.shape)
+        print(pred)
         break
+        
 
         #target = target.cpu().numpy()
         if (idx + 1) * batch_size > seq_num:
@@ -150,9 +155,6 @@ for idx in range(N):
         target_nopadding = target[nopadding_index]
         preds.append(pred_nopadding)
         
-
-print(N)
-print(q_data.shape)
 end = time.time()
 
 print("elapsed time:", end - start)
